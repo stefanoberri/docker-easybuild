@@ -20,12 +20,14 @@ RUN yum -y --enablerepo=extras install epel-release && \
     lua-posix \
     lua-filesystem \
     lua-devel \
-    tcl 
+    tcl \
+    python-pip \
+    python-wheel
 
 # SET up variables used by the build process
 ENV \
   LMOD_VER=7.2.3 \
-  EB_VER=3.2.1
+  EB_VER=3.2.0
 
 ####################
 ### Install Lmod ###
@@ -57,18 +59,41 @@ RUN useradd easybuild && \
 USER easybuild
 
 WORKDIR /home/easybuild 
-# dowload and install easybuild from /home/easybuild (where this user can write)
+# Ironically, it is not possible to specify what version of easybuild to
+# install which has potentially serious consequences on reproducibility.
+# However, using EasyBuild itself this is possible.
+# Dowload and install the lastest easybuild and then install the specific
+# EasyBuild required
+# 
 # bash -l -c is required to have a bash login shell so that modules are
 # correctly set
 RUN curl -O \
-  https://raw.githubusercontent.com/hpcugent/easybuild-framework/easybuild-framework-v${EB_VER}/easybuild/scripts/bootstrap_eb.py && \
-    bash -l -c 'python bootstrap_eb.py /opt/easybuild' && \
-    rm -rf /home/easybuild/*
+  https://raw.githubusercontent.com/hpcugent/easybuild-framework/develop/easybuild/scripts/bootstrap_eb.py && \
+    bash -l -c 'python bootstrap_eb.py /opt/easybuild/tmp' && \
+    rm -rf /home/easybuild/* && \
+    source /opt/lmod/lmod/init/bash && \
+    module use /opt/easybuild/tmp/modules/all && \
+    module load EasyBuild
 
-# create a wrapper to set up environment *AND* load easybuild
-RUN echo 'source /opt/lmod/lmod/init/bash' > /home/easybuild/setup.sh && \
-      echo 'module use /opt/easybuild/modules/all' >> /home/easybuild/setup.sh && \
-      echo 'module load EasyBuild/3.2.1' >> /home/easybuild/setup.sh 
+# # create a wrapper to set up environment *AND* load easybuild
+# RUN echo "source /opt/lmod/lmod/init/bash" > /home/easybuild/setup.sh && \
+#       echo "module use /opt/easybuild/modules/all" >> /home/easybuild/setup.sh && \
+#       echo "module load EasyBuild" >> /home/easybuild/setup.sh 
+
+# install the easybuild we want, remove temporary files, dowloaded binaries and
+# temporary EasyBuild used
+RUN source /opt/lmod/lmod/init/bash && \
+  module use /opt/easybuild/tmp/modules/all && \
+  module load EasyBuild && \
+  eb EasyBuild-${EB_VER}.eb --installpath=/opt/easybuild --buildpath=/tmp/easybuild -r && \
+  rm -rf /tmp/easybuild && \
+  rm -rf /home/easybuild/.local && \
+  rm -rf /opt/easybuild/tmp
+
+# then create a simple file to source and set the environment
+RUN echo "source /opt/lmod/lmod/init/bash" > /home/easybuild/setup.sh && \
+      echo "module use /opt/easybuild/modules/all" >> /home/easybuild/setup.sh && \
+      echo "module load EasyBuild/${EB_VER}" >> /home/easybuild/setup.sh 
 
 # set default command. Note: it is still user easybuild
 CMD source /home/easybuild/setup.sh && bash
