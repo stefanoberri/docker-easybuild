@@ -59,44 +59,32 @@ RUN useradd easybuild && \
 USER easybuild
 
 WORKDIR /home/easybuild 
+
 # Ironically, it is not possible to specify what version of easybuild to
 # install which has potentially serious consequences on reproducibility.
 # However, using EasyBuild itself this is possible.
-# Dowload and install the lastest easybuild and then install the specific
+# Download and install the lastest easybuild and then install the specific
 # EasyBuild required
 # 
 # bash -l -c is required to have a bash login shell so that modules are
 # correctly set
 RUN curl -O \
   https://raw.githubusercontent.com/hpcugent/easybuild-framework/develop/easybuild/scripts/bootstrap_eb.py && \
-    bash -l -c 'python bootstrap_eb.py /opt/easybuild/tmp' && \
-    rm -rf /home/easybuild/* && \
-    source /opt/lmod/lmod/init/bash && \
-    module use /opt/easybuild/tmp/modules/all && \
-    module load EasyBuild
-
-# # create a wrapper to set up environment *AND* load easybuild
-# RUN echo "source /opt/lmod/lmod/init/bash" > /home/easybuild/setup.sh && \
-#       echo "module use /opt/easybuild/modules/all" >> /home/easybuild/setup.sh && \
-#       echo "module load EasyBuild" >> /home/easybuild/setup.sh 
-
-# install the easybuild we want, remove temporary files, dowloaded binaries and
-# temporary EasyBuild used
-RUN source /opt/lmod/lmod/init/bash && \
+  bash -l -c 'python bootstrap_eb.py /opt/easybuild/tmp' && \
+  source /opt/lmod/lmod/init/bash && \
   module use /opt/easybuild/tmp/modules/all && \
   module load EasyBuild && \
   eb EasyBuild-${EB_VER}.eb --installpath=/opt/easybuild --buildpath=/tmp/easybuild -r && \
-  rm -rf /tmp/easybuild && \
   rm -rf /home/easybuild/.local && \
+  rm -f /home/easybuild/bootstrap_eb.py && \
   rm -rf /opt/easybuild/tmp
 
 # then create a simple file to source and set the environment
 RUN echo "source /opt/lmod/lmod/init/bash" > /home/easybuild/setup.sh && \
-      echo "module use /opt/easybuild/modules/all" >> /home/easybuild/setup.sh && \
-      echo "module load EasyBuild/${EB_VER}" >> /home/easybuild/setup.sh 
+  echo "module use /opt/easybuild/modules/all" >> /home/easybuild/setup.sh && \
+  echo "module load EasyBuild/${EB_VER}" >> /home/easybuild/setup.sh 
 
 # set default command. Note: it is still user easybuild
 CMD source /home/easybuild/setup.sh && bash
-
 # # to use easybuild to install something do the following
 # RUN source /home/easybuild/setup.sh && eb goolf-1.7.20.eb --installpath=/opt/easybuild --buildpath=/tmp/easybuild -r && rm -rf /tmp/easybuild
