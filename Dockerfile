@@ -22,7 +22,8 @@ RUN yum -y --enablerepo=extras install epel-release && \
     lua-devel \
     tcl \
     python-pip \
-    python-wheel
+    python-wheel && \
+  yum clean -y all
 
 # SET up variables used by the build process
 ENV \
@@ -43,7 +44,8 @@ RUN curl -LO http://github.com/TACC/Lmod/archive/${LMOD_VER}.tar.gz && \
     ./configure --prefix=/opt && \
     make install && \
     ln -s /opt/lmod/lmod/init/profile /etc/profile.d/modules.sh && \
-    ln -s /opt/lmod/lmod/init/cshrc /etc/profile.d/modules.csh
+    ln -s /opt/lmod/lmod/init/cshrc /etc/profile.d/modules.csh && \
+    rm -r /tmp/build/*
 
 #########################
 ### install Easybuild ###
@@ -75,9 +77,8 @@ RUN curl -O \
   module use /opt/easybuild/tmp/modules/all && \
   module load EasyBuild && \
   eb EasyBuild-${EB_VER}.eb --installpath=/opt/easybuild --buildpath=/tmp/easybuild -r && \
-  rm -rf /home/easybuild/.local && \
   rm -f /home/easybuild/bootstrap_eb.py && \
-  rm -rf /opt/easybuild/tmp
+  rm -rf /opt/easybuild/tmp /tmp/easybuild /home/easybuild/.local
 
 # then create a simple file to source and set the environment
 RUN echo "source /opt/lmod/lmod/init/bash" > /home/easybuild/setup.sh && \
