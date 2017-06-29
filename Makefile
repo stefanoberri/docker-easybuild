@@ -1,11 +1,34 @@
-DOCKER_BUILD_OPTIONS = \
-	--shm-size=64MB \
-	-f Dockerfile
+# SERVER MUST END WITH /
+SERVER     =
+NAMESPACE  = sberri
+REPO       = easybuild
+TAG        = 3.2.0
 
-all: docker.stdout
-	
-docker.stdout: Dockerfile
-	sudo docker build $(DOCKER_BUILD_OPTIONS) . 1> docker.stdout 2> docker.stderr
+# Folder where "sentinel files" are saved to track steps that do not produce
+# files
+BUILD      = $(CURDIR)/build
+
+
+FULLTAG    = $(SERVER)$(NAMESPACE)/$(REPO):$(TAG)
+SANBUILD   = $(abspath $(BUILD))
+
+STDOUT_FILE = $(SANBUILD)/docker_stdout_$(NAMESPACE)_$(REPO)_$(TAG)
+
+DOCKER_BUILD_OPTIONS = \
+	--shm-size=1024MB \
+	-f Dockerfile \
+	-t $(FULLTAG)
+
+
+all: $(SANBUILD)/.sentinel $(STDOUT_FILE)
+
+$(STDOUT_FILE): Dockerfile
+	sudo docker build $(DOCKER_BUILD_OPTIONS) . > $(STDOUT_FILE)
 
 clean:
-	rm -f docker.stdout docker.stderr
+	rm -f $(STDOUT_FILE)
+
+.PRECIOUS: %/.sentinel
+%/.sentinel:
+	mkdir -p $* || ( sleep 5 &&  mkdir -p $* ); touch $@
+
