@@ -1,15 +1,16 @@
 # SERVER MUST END WITH /
 SERVER     =
 NAMESPACE  = sberri
-REPO       = easybuild
-TAG        = goolf-1.7.20
+REPO       = eb-goolf-1.7.20
+TAG        = $(shell HOME=/dev/null git describe --always)
 # define what image must be present
-DEPTAG     = 3.2.0
+DEPTAG       = latest
+DEPREPO      = easybuild
+DEPNAMESPACE = sberri
 
 # Folder where "sentinel files" are saved to track steps that do not produce
 # files
 BUILD      = $(CURDIR)/build
-
 
 FULLTAG    = $(SERVER)$(NAMESPACE)/$(REPO):$(TAG)
 SANBUILD   = $(abspath $(BUILD))
@@ -28,7 +29,7 @@ all: $(SANBUILD)/.sentinel $(STDOUT_FILE)
 
 # go up one level and build. it takes very little if already exists
 $(DEPSTDOUTFILE):
-	cd .. && make BUILD=$(SANBUILD)
+	cd .. && make BUILD=$(SANBUILD) NAMESPACE=$(DEPNAMESPACE) REPO=$(DEPREPO) TAG=$(DEPTAG)
 
 $(STDOUT_FILE): Dockerfile $(DEPSTDOUTFILE)
 	sudo docker build $(DOCKER_BUILD_OPTIONS) . > $(STDOUT_FILE)
