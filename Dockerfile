@@ -28,7 +28,7 @@ RUN yum -y --enablerepo=extras install epel-release && \
 # SET up variables used by the build process
 ENV \
   LMOD_VER=7.2.3 \
-  EB_VER=3.2.0
+  EB_VER=3.4.0
 
 ####################
 ### Install Lmod ###
