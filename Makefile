@@ -1,8 +1,10 @@
 # SERVER MUST END WITH /
 SERVER     =
 NAMESPACE  = sberri
+EB_VERSION = 3.4.0
 REPO       = easybuild
-TAG        = 3.2.0
+GITTAG     = $(shell HOME=/dev/null git describe --always)
+TAG  	     = $(EB_VERSION)-$(GITTAG)
 
 # Folder where "sentinel files" are saved to track steps that do not produce
 # files

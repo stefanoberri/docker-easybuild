@@ -7,11 +7,11 @@ MAINTAINER Stefano Berri <sberri@illumina.com>
 
 # - Activate EPEL repos
 # - lmod prerequisite: gcc make lua lua-posix lua-filesystem lua-devel tcl
-# - easybuild prerequisites: git which bzip2 libibverbs-dev libibverbs-devel 
+# - easybuild prerequisites: git which bzip2 libibverbs-dev libibverbs-devel
 #   however, when later installing other tools, further dependencies on the OS
 #   are required. To minimise risk, install "Development tools"
 RUN yum -y --enablerepo=extras install epel-release && \
-  yum groupinstall -y "Development tools" && \ 
+  yum groupinstall -y "Development tools" && \
   yum install -y \
     which \
     libibverbs-dev \
@@ -28,7 +28,7 @@ RUN yum -y --enablerepo=extras install epel-release && \
 # SET up variables used by the build process
 ENV \
   LMOD_VER=7.2.3 \
-  EB_VER=3.2.0
+  EB_VER=3.4.0
 
 ####################
 ### Install Lmod ###
@@ -52,7 +52,7 @@ RUN curl -LO http://github.com/TACC/Lmod/archive/${LMOD_VER}.tar.gz && \
 #########################
 # see https://github.com/rjeschmi/docker-easybuild-centos7
 
-# - add a non root user to install easybuild (easybuild does not install as root) 
+# - add a non root user to install easybuild (easybuild does not install as root)
 # - create a suitable directory and pass ownership to user easybuild
 RUN useradd easybuild && \
     mkdir -p /opt/easybuild && chown easybuild:easybuild /opt/easybuild
@@ -60,14 +60,15 @@ RUN useradd easybuild && \
 # become that user for now on
 USER easybuild
 
-WORKDIR /home/easybuild 
+WORKDIR /home/easybuild
 
 # Ironically, it is not possible to specify what version of easybuild to
 # install which has potentially serious consequences on reproducibility.
 # However, using EasyBuild itself this is possible.
 # Download and install the lastest easybuild and then install the specific
 # EasyBuild required
-# 
+#
+COPY EasyBuild-${EB_VER}.eb /home/easybuild/
 # bash -l -c is required to have a bash login shell so that modules are
 # correctly set
 RUN curl -O \
@@ -76,14 +77,17 @@ RUN curl -O \
   source /opt/lmod/lmod/init/bash && \
   module use /opt/easybuild/tmp/modules/all && \
   module load EasyBuild && \
-  eb EasyBuild-${EB_VER}.eb --installpath=/opt/easybuild --buildpath=/tmp/easybuild -r && \
+  eb /home/easybuild/EasyBuild-${EB_VER}.eb --force --installpath=/opt/easybuild --buildpath=/tmp/easybuild -r && \
   rm -f /home/easybuild/bootstrap_eb.py && \
-  rm -rf /opt/easybuild/tmp /tmp/easybuild /home/easybuild/.local
+  rm -rf /opt/easybuild/tmp \
+    /tmp/easybuild \
+    /home/easybuild/.local \
+    /home/easybuild/EasyBuild-${EB_VER}.eb
 
 # then create a simple file to source and set the environment
 RUN echo "source /opt/lmod/lmod/init/bash" > /home/easybuild/setup.sh && \
   echo "module use /opt/easybuild/modules/all" >> /home/easybuild/setup.sh && \
-  echo "module load EasyBuild/${EB_VER}" >> /home/easybuild/setup.sh 
+  echo "module load EasyBuild/${EB_VER}" >> /home/easybuild/setup.sh
 
 # set default command. Note: it is still user easybuild
 CMD source /home/easybuild/setup.sh && bash
