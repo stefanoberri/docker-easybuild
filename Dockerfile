@@ -63,9 +63,9 @@ USER easybuild
 WORKDIR /home/easybuild
 
 # Ironically, it is not possible to specify what version of easybuild to
-# install which has potentially serious consequences on reproducibility.
+# install via the bootstrap process, which has potentially serious consequences on reproducibility.
 # However, using EasyBuild itself this is possible.
-# Download and install the lastest easybuild and then install the specific
+# Download and install the latest easybuild and then install the specific
 # EasyBuild required
 #
 COPY EasyBuild-${EB_VER}.eb /home/easybuild/
